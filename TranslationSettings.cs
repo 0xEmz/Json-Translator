@@ -31,8 +31,8 @@ public class TranslationSettings
 
     // الثوابت الثابتة
     public const string OLLAMA_ENDPOINT = "http://localhost:11434/api/generate";
-    //public const string LOCAL_MODEL = "gemma3:12b";
-    public const string LOCAL_MODEL = "gpt-oss:120b-cloud";
+    public const string LOCAL_MODEL = "gemma3:12b";
+    //public const string LOCAL_MODEL = "gpt-oss:120b-cloud";
     public const string MISTRAL_API_ENDPOINT = "https://api.mistral.ai/v1/chat/completions";
     public const string MISTRAL_MODEL = "mistral-large-latest";
     public const string SECONDARY_CLOUD_MODEL = "gpt-oss:120b-cloud";
