@@ -1,4 +1,4 @@
-﻿// JsonTranslator.Designer.cs - (تعديل) تم حذف chkMaintainLineBreaks
+﻿// JsonTranslator.Designer.cs - Updated to include "Preserve TAGS" Checkbox
 
 using System.Drawing;
 using System.Windows.Forms;
@@ -47,8 +47,8 @@ namespace WinFormsApp1
             btnStartTranslation = new Button();
             labelFileRange = new Label();
             cmbFileRange = new ComboBox();
-            // 🆕 تم حذف chkMaintainLineBreaks من هنا
             chkUseLocalOnly = new CheckBox();
+            chkPreserveTags = new CheckBox(); // 🆕 إضافة CheckBox جديد
             groupBoxPaths.SuspendLayout();
             tableLayoutPanel1.SuspendLayout();
             groupBoxKeys.SuspendLayout();
@@ -221,7 +221,7 @@ namespace WinFormsApp1
             groupBoxKeys.Dock = DockStyle.Top;
             groupBoxKeys.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
             groupBoxKeys.ForeColor = Color.LightGray;
-            groupBoxKeys.Location = new Point(10, 260); // 🆕 تعديل الـ Location بعد حذف عنصر
+            groupBoxKeys.Location = new Point(10, 285);
             groupBoxKeys.Name = "groupBoxKeys";
             groupBoxKeys.Size = new Size(930, 120);
             groupBoxKeys.TabIndex = 2;
@@ -310,7 +310,7 @@ namespace WinFormsApp1
             groupBoxPrompt.Dock = DockStyle.Top;
             groupBoxPrompt.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
             groupBoxPrompt.ForeColor = Color.LightGray;
-            groupBoxPrompt.Location = new Point(10, 380); // 🆕 تعديل الـ Location بعد حذف عنصر
+            groupBoxPrompt.Location = new Point(10, 405);
             groupBoxPrompt.Name = "groupBoxPrompt";
             groupBoxPrompt.Padding = new Padding(5);
             groupBoxPrompt.Size = new Size(930, 130);
@@ -364,7 +364,7 @@ namespace WinFormsApp1
             tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             tableLayoutPanel3.Controls.Add(btnStartTranslation, 0, 0);
             tableLayoutPanel3.Dock = DockStyle.Top;
-            tableLayoutPanel3.Location = new Point(10, 510); // 🆕 تعديل الـ Location بعد حذف عنصر
+            tableLayoutPanel3.Location = new Point(10, 535);
             tableLayoutPanel3.Name = "tableLayoutPanel3";
             tableLayoutPanel3.RowCount = 1;
             tableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
@@ -414,22 +414,31 @@ namespace WinFormsApp1
             cmbFileRange.Size = new Size(930, 29);
             cmbFileRange.TabIndex = 6;
             // 
-            // chkMaintainLineBreaks
-            // 
-            // 🆕 تم حذف chkMaintainLineBreaks
-            // 
             // chkUseLocalOnly
             // 
             chkUseLocalOnly.AutoSize = true;
             chkUseLocalOnly.Dock = DockStyle.Top;
             chkUseLocalOnly.Font = new Font("Segoe UI", 12F);
             chkUseLocalOnly.ForeColor = Color.FromArgb(255, 192, 128);
-            chkUseLocalOnly.Location = new Point(10, 235); // 🆕 تعديل الـ Location بعد حذف عنصر
+            chkUseLocalOnly.Location = new Point(10, 235);
             chkUseLocalOnly.Name = "chkUseLocalOnly";
             chkUseLocalOnly.Size = new Size(930, 25);
             chkUseLocalOnly.TabIndex = 9;
             chkUseLocalOnly.Text = "Use Local Model Only (Ollama)";
             chkUseLocalOnly.UseVisualStyleBackColor = true;
+            // 
+            // chkPreserveTags
+            // 
+            chkPreserveTags.AutoSize = true;
+            chkPreserveTags.Dock = DockStyle.Top;
+            chkPreserveTags.Font = new Font("Segoe UI", 12F);
+            chkPreserveTags.ForeColor = Color.FromArgb(100, 200, 255);
+            chkPreserveTags.Location = new Point(10, 260);
+            chkPreserveTags.Name = "chkPreserveTags";
+            chkPreserveTags.Size = new Size(930, 25);
+            chkPreserveTags.TabIndex = 10;
+            chkPreserveTags.Text = "Preserve TAGS (e.g., [T_1], [BR_1]) - (Slice Mode)";
+            chkPreserveTags.UseVisualStyleBackColor = true;
             // 
             // JsonTranslator
             // 
@@ -440,8 +449,8 @@ namespace WinFormsApp1
             Controls.Add(tableLayoutPanel3);
             Controls.Add(groupBoxPrompt);
             Controls.Add(groupBoxKeys);
+            Controls.Add(chkPreserveTags);
             Controls.Add(chkUseLocalOnly);
-            // 🆕 تم حذف chkMaintainLineBreaks من Controls.Add
             Controls.Add(cmbFileRange);
             Controls.Add(labelFileRange);
             Controls.Add(groupBoxPaths);
@@ -491,7 +500,7 @@ namespace WinFormsApp1
         public Button btnStartTranslation;
         private Label labelFileRange;
         public ComboBox cmbFileRange;
-        // 🆕 تم حذف chkMaintainLineBreaks
         public CheckBox chkUseLocalOnly;
+        public CheckBox chkPreserveTags;
     }
 }

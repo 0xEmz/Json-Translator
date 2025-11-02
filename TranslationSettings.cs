@@ -1,5 +1,4 @@
-﻿// TranslationSettings.cs - (تعديل) تم حذف الخصائص غير المستخدمة
-
+﻿// TranslationSettings.cs
 using System;
 using System.Collections.Generic;
 
@@ -18,13 +17,14 @@ public class TranslationSettings
     public string MistralKey1 { get; set; }
     public string MistralKey2 { get; set; }
 
-    // 🆕 تم حذف خاصية MaintainLineBreaks
-
     // الخاصية الناقصة التي سببت الخطأ 
     public string PromptTemplate { get; set; }
 
     // 🆕 خاصية جديدة: استخدام الموديل المحلي فقط
     public bool UseLocalOnly { get; set; }
+
+    // 🆕 الخاصية الجديدة لتفعيل الحفاظ على التاجز
+    public bool PreserveTags { get; set; }
 
     // قائمة بجميع المفاتيح المُستوردة من الملف (Pool)
     public static List<string> AllMistralKeys { get; set; } = new List<string>();
@@ -39,8 +39,6 @@ public class TranslationSettings
 
     public const int WORD_COUNT_THRESHOLD = 10;
     public const int REQUEST_TIMEOUT_SECONDS = 90;
-
-    // 🆕 تم حذف LINE_PLACEHOLDER
 
     public static readonly List<string> RateLimitKeywords = new List<string>
     {

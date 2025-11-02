@@ -1,4 +1,4 @@
-﻿// JsonTranslator.cs - (تعديل) تم إلغاء منطق chkMaintainLineBreaks
+﻿// JsonTranslator.cs - Final Version with "Preserve TAGS" Checkbox Logic
 
 using System;
 using System.Drawing;
@@ -58,8 +58,8 @@ namespace WinFormsApp1
                 this.txtPromptFilePath.Font = new Font("Segoe UI", 12F);
                 this.cmbFileRange.Font = new Font("Segoe UI", 12F);
                 this.labelFileRange.Font = new Font(customBaseFont.FontFamily, 12F);
-                // 🆕 تم حذف السطر الخاص بـ chkMaintainLineBreaks.Font
                 this.chkUseLocalOnly.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+                this.chkPreserveTags.Font = new Font("Segoe UI", 12F); // 🆕 تطبيق الفونت
             }
 
             // --- ربط الأحداث (Event Handlers) ---
@@ -340,7 +340,7 @@ namespace WinFormsApp1
                 var jsonFiles = Directory.GetFiles(txtInputFolder.Text.Trim(), "*.json");
                 Array.Sort(jsonFiles);
                 int totalFiles = jsonFiles.Length;
-                const int chunkSize = 100;
+                const int chunkSize = 400;
 
                 for (int i = 0; i < totalFiles; i += chunkSize)
                 {
@@ -471,8 +471,8 @@ namespace WinFormsApp1
                     }
                 }
 
-                // 🆕 تم حذف bool maintainLineBreaks
                 bool useLocalOnly = chkUseLocalOnly.Checked;
+                bool preserveTags = chkPreserveTags.Checked; // 🆕 قراءة الحالة الجديدة
 
                 settings.InputPath = txtInputFolder.Text.Trim();
                 settings.OutputPath = txtOutputFolder.Text.Trim();
@@ -482,8 +482,8 @@ namespace WinFormsApp1
                 settings.StartIndex = startIdx;
                 settings.EndIndex = endIdx;
                 settings.PromptTemplate = finalPromptTemplate;
-                // 🆕 تم حذف settings.MaintainLineBreaks
                 settings.UseLocalOnly = useLocalOnly;
+                settings.PreserveTags = preserveTags; // 🆕 تمرير الحالة
 
                 // --- 4. فتح النافذة وبدء العملية ---
                 string jobTitle = useLocalOnly ? $"Job (Local): {selectedRange}" : $"Job (Cloud): {selectedRange} | Keys: {key1.Substring(0, 4)}... | Rem: {_rangeQueue.Count}";
@@ -548,9 +548,11 @@ namespace WinFormsApp1
             }
             finally
             {
+                // 🆕 تحرير المفاتيح (فقط إذا تم استخدامها)
                 if (key1 != null) _usedKeys.Remove(key1);
                 if (key2 != null) _usedKeys.Remove(key2);
 
+                // 🆕 التنظيف والإغلاق
                 if (currentLogWindow != null)
                 {
                     _activeLogWindows.Remove(currentLogWindow);
@@ -563,12 +565,14 @@ namespace WinFormsApp1
 
                 if (cts != null) cts.Dispose();
 
+                // إعادة تفعيل الواجهة الرئيسية إذا لم يعد هناك أي وظائف نشطة
                 if (_activeLogWindows.Count == 0)
                 {
                     this.Enabled = true;
                     btnStartTranslation.Enabled = true;
                 }
 
+                // نطلب من كل النوافذ النشطة الأخرى تحديث زرار Roll Next
                 bool stillCanRoll = _rangeQueue.Count > 0;
                 foreach (var win in _activeLogWindows)
                 {
