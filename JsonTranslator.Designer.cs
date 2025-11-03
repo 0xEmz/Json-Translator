@@ -1,4 +1,4 @@
-﻿// JsonTranslator.Designer.cs - Updated to include "Preserve TAGS" Checkbox
+﻿// JsonTranslator.Designer.cs - (تعديل) إضافة زرار حفظ الإعدادات
 
 using System.Drawing;
 using System.Windows.Forms;
@@ -48,13 +48,29 @@ namespace WinFormsApp1
             labelFileRange = new Label();
             cmbFileRange = new ComboBox();
             chkUseLocalOnly = new CheckBox();
-            chkPreserveTags = new CheckBox(); // 🆕 إضافة CheckBox جديد
+            chkPreserveTags = new CheckBox();
+
+            // 🆕 [إضافة] تعريف الكونترولز الجديدة
+            groupBoxModels = new GroupBox();
+            tableLayoutPanel4 = new TableLayoutPanel();
+            labelLocalModel = new Label();
+            txtLocalModelName = new TextBox();
+            labelCloudModel = new Label();
+            txtCloudModelName = new TextBox();
+
+            // 🆕 [إضافة] زرار الحفظ
+            tableLayoutPanel5 = new TableLayoutPanel();
+            btnSaveSettings = new Button();
+
             groupBoxPaths.SuspendLayout();
             tableLayoutPanel1.SuspendLayout();
             groupBoxKeys.SuspendLayout();
             tableLayoutPanel2.SuspendLayout();
             groupBoxPrompt.SuspendLayout();
             tableLayoutPanel3.SuspendLayout();
+            groupBoxModels.SuspendLayout();
+            tableLayoutPanel4.SuspendLayout();
+            tableLayoutPanel5.SuspendLayout(); // 🆕
             SuspendLayout();
             // 
             // groupBoxPaths
@@ -364,12 +380,12 @@ namespace WinFormsApp1
             tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             tableLayoutPanel3.Controls.Add(btnStartTranslation, 0, 0);
             tableLayoutPanel3.Dock = DockStyle.Top;
-            tableLayoutPanel3.Location = new Point(10, 535);
+            tableLayoutPanel3.Location = new Point(10, 695); // 🆕 تعديل مكان زرار البدء
             tableLayoutPanel3.Name = "tableLayoutPanel3";
             tableLayoutPanel3.RowCount = 1;
             tableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             tableLayoutPanel3.Size = new Size(930, 70);
-            tableLayoutPanel3.TabIndex = 8;
+            tableLayoutPanel3.TabIndex = 10; // 🆕 تعديل الترتيب
             // 
             // btnStartTranslation
             // 
@@ -395,9 +411,9 @@ namespace WinFormsApp1
             labelFileRange.Location = new Point(10, 185);
             labelFileRange.Name = "labelFileRange";
             labelFileRange.RightToLeft = RightToLeft.No;
-            labelFileRange.Size = new Size(228, 21);
+            labelFileRange.Size = new Size(244, 21);
             labelFileRange.TabIndex = 5;
-            labelFileRange.Text = "File Range to Process (per 100):";
+            labelFileRange.Text = "File Range to Process (per 400):";
             labelFileRange.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // cmbFileRange
@@ -440,13 +456,126 @@ namespace WinFormsApp1
             chkPreserveTags.Text = "Preserve TAGS (e.g., [T_1], [BR_1]) - (Slice Mode)";
             chkPreserveTags.UseVisualStyleBackColor = true;
             // 
+            // groupBoxModels
+            // 
+            groupBoxModels.BackColor = Color.FromArgb(45, 45, 48);
+            groupBoxModels.Controls.Add(tableLayoutPanel4);
+            groupBoxModels.Dock = DockStyle.Top;
+            groupBoxModels.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
+            groupBoxModels.ForeColor = Color.LightGray;
+            groupBoxModels.Location = new Point(10, 535);
+            groupBoxModels.Name = "groupBoxModels";
+            groupBoxModels.Padding = new Padding(5);
+            groupBoxModels.Size = new Size(930, 100);
+            groupBoxModels.TabIndex = 8;
+            groupBoxModels.TabStop = false;
+            groupBoxModels.Text = "Ollama Model Names";
+            // 
+            // tableLayoutPanel4
+            // 
+            tableLayoutPanel4.ColumnCount = 2;
+            tableLayoutPanel4.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200F));
+            tableLayoutPanel4.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tableLayoutPanel4.Controls.Add(labelLocalModel, 0, 0);
+            tableLayoutPanel4.Controls.Add(txtLocalModelName, 1, 0);
+            tableLayoutPanel4.Controls.Add(labelCloudModel, 0, 1);
+            tableLayoutPanel4.Controls.Add(txtCloudModelName, 1, 1);
+            tableLayoutPanel4.Dock = DockStyle.Fill;
+            tableLayoutPanel4.Location = new Point(5, 30);
+            tableLayoutPanel4.Name = "tableLayoutPanel4";
+            tableLayoutPanel4.RowCount = 2;
+            tableLayoutPanel4.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            tableLayoutPanel4.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            tableLayoutPanel4.Size = new Size(920, 65);
+            tableLayoutPanel4.TabIndex = 0;
+            // 
+            // labelLocalModel
+            // 
+            labelLocalModel.AutoSize = true;
+            labelLocalModel.Dock = DockStyle.Fill;
+            labelLocalModel.Font = new Font("Segoe UI", 11F);
+            labelLocalModel.Location = new Point(3, 0);
+            labelLocalModel.Name = "labelLocalModel";
+            labelLocalModel.RightToLeft = RightToLeft.No;
+            labelLocalModel.Size = new Size(194, 32);
+            labelLocalModel.TabIndex = 0;
+            labelLocalModel.Text = "Local Model Name:";
+            labelLocalModel.TextAlign = ContentAlignment.MiddleLeft;
+            // 
+            // txtLocalModelName
+            // 
+            txtLocalModelName.BackColor = Color.FromArgb(37, 37, 38);
+            txtLocalModelName.BorderStyle = BorderStyle.FixedSingle;
+            txtLocalModelName.Dock = DockStyle.Fill;
+            txtLocalModelName.Font = new Font("Segoe UI", 12F);
+            txtLocalModelName.ForeColor = Color.White;
+            txtLocalModelName.Location = new Point(203, 3);
+            txtLocalModelName.Name = "txtLocalModelName";
+            txtLocalModelName.Size = new Size(714, 29);
+            txtLocalModelName.TabIndex = 1;
+            // 
+            // labelCloudModel
+            // 
+            labelCloudModel.AutoSize = true;
+            labelCloudModel.Dock = DockStyle.Fill;
+            labelCloudModel.Font = new Font("Segoe UI", 11F);
+            labelCloudModel.Location = new Point(3, 32);
+            labelCloudModel.Name = "labelCloudModel";
+            labelCloudModel.RightToLeft = RightToLeft.No;
+            labelCloudModel.Size = new Size(194, 33);
+            labelCloudModel.TabIndex = 2;
+            labelCloudModel.Text = "Secondary Cloud Model:";
+            labelCloudModel.TextAlign = ContentAlignment.MiddleLeft;
+            // 
+            // txtCloudModelName
+            // 
+            txtCloudModelName.BackColor = Color.FromArgb(37, 37, 38);
+            txtCloudModelName.BorderStyle = BorderStyle.FixedSingle;
+            txtCloudModelName.Dock = DockStyle.Fill;
+            txtCloudModelName.Font = new Font("Segoe UI", 12F);
+            txtCloudModelName.ForeColor = Color.White;
+            txtCloudModelName.Location = new Point(203, 35);
+            txtCloudModelName.Name = "txtCloudModelName";
+            txtCloudModelName.Size = new Size(714, 29);
+            txtCloudModelName.TabIndex = 3;
+            // 
+            // tableLayoutPanel5
+            // 
+            tableLayoutPanel5.ColumnCount = 1;
+            tableLayoutPanel5.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tableLayoutPanel5.Controls.Add(btnSaveSettings, 0, 0);
+            tableLayoutPanel5.Dock = DockStyle.Top;
+            tableLayoutPanel5.Location = new Point(10, 640); // 🆕 مكان زرار الحفظ
+            tableLayoutPanel5.Name = "tableLayoutPanel5";
+            tableLayoutPanel5.RowCount = 1;
+            tableLayoutPanel5.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tableLayoutPanel5.Size = new Size(930, 50); // 🆕 حجم زرار الحفظ
+            tableLayoutPanel5.TabIndex = 9; // 🆕 ترتيب
+            // 
+            // btnSaveSettings
+            // 
+            btnSaveSettings.BackColor = Color.FromArgb(0, 100, 0); // 🆕 لون أخضر
+            btnSaveSettings.Dock = DockStyle.Fill;
+            btnSaveSettings.FlatAppearance.BorderSize = 0;
+            btnSaveSettings.FlatStyle = FlatStyle.Flat;
+            btnSaveSettings.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            btnSaveSettings.ForeColor = Color.White;
+            btnSaveSettings.Location = new Point(3, 3);
+            btnSaveSettings.Name = "btnSaveSettings";
+            btnSaveSettings.Size = new Size(924, 44);
+            btnSaveSettings.TabIndex = 0;
+            btnSaveSettings.Text = "💾 Save Settings";
+            btnSaveSettings.UseVisualStyleBackColor = false;
+            // 
             // JsonTranslator
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(30, 30, 30);
-            ClientSize = new Size(950, 650);
+            ClientSize = new Size(950, 775); // 🆕 زيادة طول الواجهة
             Controls.Add(tableLayoutPanel3);
+            Controls.Add(tableLayoutPanel5); // 🆕 إضافة بانل زرار الحفظ
+            Controls.Add(groupBoxModels);
             Controls.Add(groupBoxPrompt);
             Controls.Add(groupBoxKeys);
             Controls.Add(chkPreserveTags);
@@ -468,6 +597,10 @@ namespace WinFormsApp1
             groupBoxPrompt.ResumeLayout(false);
             groupBoxPrompt.PerformLayout();
             tableLayoutPanel3.ResumeLayout(false);
+            groupBoxModels.ResumeLayout(false);
+            tableLayoutPanel4.ResumeLayout(false);
+            tableLayoutPanel4.PerformLayout();
+            tableLayoutPanel5.ResumeLayout(false); // 🆕
             ResumeLayout(false);
             PerformLayout();
 
@@ -502,5 +635,17 @@ namespace WinFormsApp1
         public ComboBox cmbFileRange;
         public CheckBox chkUseLocalOnly;
         public CheckBox chkPreserveTags;
+
+        // 🆕 [إضافة] تعريف المتغيرات الجديدة
+        private GroupBox groupBoxModels;
+        private TableLayoutPanel tableLayoutPanel4;
+        private Label labelLocalModel;
+        public TextBox txtLocalModelName;
+        private Label labelCloudModel;
+        public TextBox txtCloudModelName;
+
+        // 🆕 [إضافة] زرار الحفظ
+        private TableLayoutPanel tableLayoutPanel5;
+        public Button btnSaveSettings;
     }
 }

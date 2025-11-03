@@ -1,5 +1,7 @@
 ﻿// TranslationProcessor.cs - (تعديل)
-// إصلاح خطأ "fileLogPath does not exist"
+// 1. إضافة "ريتراي" لجيميني
+// 2. إلغاء "الريتراي" من ميسترال
+// 3. قراءة مفتاح جيميني المختار من الإعدادات
 
 using System;
 using System.Collections.Generic;
@@ -23,9 +25,6 @@ namespace WinFormsApp1
         private readonly HttpClient _httpClient;
         private readonly string _promptTemplate;
 
-        // --- كل الدوال المساعدة (CleanLlmResponse, Data Models, APIs, ... الخ) ---
-        // --- ... زي ما هي بالظبط ... ---
-        #region Helper Functions (No Changes)
         public TranslationProcessor(TranslationSettings settings, LogAction logger)
         {
             _settings = settings;
@@ -35,6 +34,7 @@ namespace WinFormsApp1
             _promptTemplate = settings.PromptTemplate;
         }
 
+        // --- 1. دوال Utility المساعدة ---
         private string CleanLlmResponse(string responseText)
         {
             if (string.IsNullOrEmpty(responseText)) return string.Empty;
@@ -51,18 +51,119 @@ namespace WinFormsApp1
             return responseText.Trim();
         }
 
+        // --- 2. الـ Data Models (تم إضافة موديلات جيميني) ---
+        #region Data Models
+        // Mistral
         private class MistralMessage { [JsonProperty("content")] public string Content { get; set; } = string.Empty; }
         private class MistralChoice { [JsonProperty("message")] public MistralMessage Message { get; set; } = new MistralMessage(); }
         private class MistralError { [JsonProperty("message")] public string Message { get; set; } = string.Empty; }
         private class MistralResponse { [JsonProperty("choices")] public List<MistralChoice> Choices { get; set; } = new List<MistralChoice>(); [JsonProperty("error")] public MistralError? Error { get; set; } }
+
+        // Ollama
         private class OllamaResponse { [JsonProperty("response")] public string Response { get; set; } = string.Empty; }
+
+        // 🆕 [إضافة] Gemini
+        private class GeminiTextPart { [JsonProperty("text")] public string Text { get; set; } = string.Empty; }
+        private class GeminiContent { [JsonProperty("parts")] public List<GeminiTextPart> Parts { get; set; } = new List<GeminiTextPart>(); }
+        private class GeminiCandidate { [JsonProperty("content")] public GeminiContent Content { get; set; } = new GeminiContent(); }
+        private class GeminiPromptFeedback { [JsonProperty("blockReason")] public string BlockReason { get; set; } = string.Empty; }
+        private class GeminiResponse
+        {
+            [JsonProperty("candidates")] public List<GeminiCandidate> Candidates { get; set; } = new List<GeminiCandidate>();
+            [JsonProperty("promptFeedback")] public GeminiPromptFeedback? PromptFeedback { get; set; }
+        }
+
+        // Config
         private class TranslationConfig
         {
             public string Model { get; set; } = string.Empty;
             public string Api { get; set; } = string.Empty;
             public string KeyLabel { get; set; } = string.Empty;
-            public string? ApiKey { get; set; }
+            public string? ApiKey { get; set; } // (ده هيفضل null في حالة جيميني)
             public int SleepSeconds { get; set; } = 1;
+        }
+        #endregion
+
+        // --- 3. دوال API الفعلية (تم إضافة دالة جيميني) ---
+
+        // 🆕 [إضافة] دالة جديدة خاصة بجيميني
+        private async Task<(string translation, string errorType, string successSource)> TranslateWithGemini(string cleanText, string modelName, int attemptNum, string fileLogPath)
+        {
+            // 🆕 [تعديل] قراءة المفتاح المختار من الإعدادات
+            string apiKey = _settings.SelectedGeminiKey;
+            // 🆕 [تعديل] استخدام اسم الموديل من الإعدادات
+            string logPrefix = $"    Attempt {attemptNum} [Gemini/{modelName}]:";
+            _logger(fileLogPath, $"{logPrefix} Sending request...", false);
+            string fullPrompt = string.Format(_promptTemplate, cleanText);
+
+            _logger(fileLogPath, $"    --- Payload Sent (To {modelName}) --- \n{cleanText}\n    --- End Payload ---", false);
+
+            var payload = new
+            {
+                contents = new[] {
+                    new {
+                        parts = new[] {
+                            new { text = fullPrompt }
+                        }
+                    }
+                }
+                // (إضافة إعدادات الأمان عشان نتجنب البلوك)
+                ,
+                safetySettings = new[] {
+                    new { category = "HARM_CATEGORY_HARASSMENT", threshold = "BLOCK_NONE" },
+                    new { category = "HARM_CATEGORY_HATE_SPEECH", threshold = "BLOCK_NONE" },
+                    new { category = "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold = "BLOCK_NONE" },
+                    new { category = "HARM_CATEGORY_DANGEROUS_CONTENT", threshold = "BLOCK_NONE" }
+                }
+            };
+            string jsonPayload = JsonConvert.SerializeObject(payload);
+
+            string fullUrl = $"{TranslationSettings.GEMINI_API_ENDPOINT}?key={apiKey}";
+
+            _httpClient.DefaultRequestHeaders.Clear();
+            var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
+            try
+            {
+                HttpResponseMessage response = await _httpClient.PostAsync(fullUrl, content);
+                string responseString = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    if (responseString.ToLower().Contains("quota")) return (string.Empty, "RATE_LIMIT", string.Empty);
+                    // 🆕 [إضافة] معالجة خطأ المفتاح الغلط
+                    if (responseString.ToLower().Contains("apikey")) return (string.Empty, "INVALID_KEY", string.Empty);
+                    return ($"[TRANSLATION ERROR: HTTP {(int)response.StatusCode}]", "NETWORK_ERROR", string.Empty);
+                }
+
+                var result = JsonConvert.DeserializeObject<GeminiResponse>(responseString);
+
+                if (result?.Candidates == null || result.Candidates.Count == 0)
+                {
+                    if (result?.PromptFeedback?.BlockReason != null)
+                    {
+                        return ($"[TRANSLATION ERROR: Gemini blocked prompt. Reason: {result.PromptFeedback.BlockReason}]", "SAFETY_BLOCK", string.Empty);
+                    }
+                    return ("[TRANSLATION ERROR: No content found]", "NO_CONTENT", string.Empty);
+                }
+
+                string translation = result.Candidates.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text ?? "[TRANSLATION ERROR: No content found]";
+
+                _logger(fileLogPath, $"    --- Raw Response Received (From {modelName}) --- \n{translation}\n    --- End Raw Response ---", false);
+
+                string cleanedTranslation = CleanLlmResponse(translation);
+                string successSource = $"Gemini/{modelName}";
+
+                if (string.IsNullOrEmpty(cleanedTranslation) && !string.IsNullOrEmpty(translation) && !translation.StartsWith("[TRANSLATION ERROR")) return ("[TRANSLATION ERROR: Cleaned response was empty]", "CLEANING_ERROR", string.Empty);
+                return (cleanedTranslation, string.Empty, successSource);
+            }
+            catch (TaskCanceledException) { return ("[TRANSLATION ERROR: Timeout]", "TIMEOUT", string.Empty); }
+            catch (Exception ex)
+            {
+                if (TranslationSettings.RateLimitKeywords.Any(keyword => ex.Message.ToLower().Contains(keyword))) return (string.Empty, "RATE_LIMIT", string.Empty);
+                _logger(fileLogPath, $"{logPrefix} FAILED (Unexpected): {ex.Message}", true);
+                return ($"[TRANSLATION ERROR: Unexpected {ex.Message}]", "UNKNOWN_ERROR", string.Empty);
+            }
         }
 
         private async Task<(string translation, string errorType, string successSource)> TranslateWithMistral(string cleanText, string modelName, string apiKey, int attemptNum, string keyLabel, string fileLogPath)
@@ -89,6 +190,8 @@ namespace WinFormsApp1
                     var errorResponse = JsonConvert.DeserializeObject<MistralResponse>(responseString);
                     string errorMessage = errorResponse?.Error?.Message.ToLower() ?? response.ReasonPhrase?.ToLower() ?? "unknown error";
                     if (TranslationSettings.RateLimitKeywords.Any(keyword => errorMessage.Contains(keyword))) return (string.Empty, "RATE_LIMIT", string.Empty);
+                    // 🆕 [إضافة] معالجة خطأ المفتاح الغلط
+                    if (errorMessage.Contains("invalid api key") || errorMessage.Contains("forbidden")) return (string.Empty, "INVALID_KEY", string.Empty);
                     return ($"[TRANSLATION ERROR: HTTP {(int)response.StatusCode} / {errorMessage}]", "NETWORK_ERROR", string.Empty);
                 }
 
@@ -157,52 +260,72 @@ namespace WinFormsApp1
             }
         }
 
+        // --- 4. استراتيجية الترجمة (هنا التعديل) ---
         private List<TranslationConfig> GetTranslationStrategy(bool isLongText)
         {
             var strategy = new List<TranslationConfig>();
 
             if (_settings.UseLocalOnly)
             {
-                strategy.Add(new TranslationConfig { Model = TranslationSettings.LOCAL_MODEL, Api = "ollama", KeyLabel = "Local" });
+                strategy.Add(new TranslationConfig { Model = _settings.LocalModelName, Api = "ollama", KeyLabel = "Local" });
                 return strategy;
             }
 
+            // --- تعريف الموديلات ---
+            // 🆕 [تعديل] إضافة جيميني ريتراي
+            var gemini = new TranslationConfig { Model = TranslationSettings.GEMINI_MODEL, Api = "gemini", KeyLabel = "Gemini", ApiKey = null };
+            var geminiRetry = new TranslationConfig { Model = TranslationSettings.GEMINI_MODEL, Api = "gemini", KeyLabel = "Gemini (Retry)", ApiKey = null, SleepSeconds = 5 };
+
+            // ميسترال (بدون ريتراي)
             var mistralPrimary = new TranslationConfig { Model = TranslationSettings.MISTRAL_MODEL, Api = "mistral", KeyLabel = "Primary", ApiKey = _settings.MistralKey1 };
             var mistralSecondary = new TranslationConfig { Model = TranslationSettings.MISTRAL_MODEL, Api = "mistral", KeyLabel = "Secondary", ApiKey = _settings.MistralKey2 };
-            var mistralPrimaryRetry = new TranslationConfig { Model = TranslationSettings.MISTRAL_MODEL, Api = "mistral", KeyLabel = "Primary (Retry)", ApiKey = _settings.MistralKey1, SleepSeconds = 5 };
-            var mistralSecondaryRetry = new TranslationConfig { Model = TranslationSettings.MISTRAL_MODEL, Api = "mistral", KeyLabel = "Secondary (Retry)", ApiKey = _settings.MistralKey2, SleepSeconds = 1 };
-            var ollamaCloud = new TranslationConfig { Model = TranslationSettings.SECONDARY_CLOUD_MODEL, Api = "ollama", KeyLabel = "Cloud", SleepSeconds = 1 };
-            var ollamaLocal = new TranslationConfig { Model = TranslationSettings.LOCAL_MODEL, Api = "ollama", KeyLabel = "Local", SleepSeconds = 1 };
 
+            // أولاما
+            var ollamaCloud = new TranslationConfig { Model = _settings.CloudModelName, Api = "ollama", KeyLabel = "Cloud", SleepSeconds = 1 };
+            var ollamaLocal = new TranslationConfig { Model = _settings.LocalModelName, Api = "ollama", KeyLabel = "Local", SleepSeconds = 1 };
+
+            // فحص المفاتيح
+            bool geminiEnabled = !string.IsNullOrWhiteSpace(_settings.SelectedGeminiKey);
+            bool mistralP1Enabled = !string.IsNullOrEmpty(mistralPrimary.ApiKey);
+            bool mistralP2Enabled = !string.IsNullOrEmpty(mistralSecondary.ApiKey);
 
             if (isLongText)
             {
-                strategy.Add(mistralPrimary);
-                if (!string.IsNullOrEmpty(_settings.MistralKey2)) strategy.Add(mistralSecondary);
-
-                if (!string.IsNullOrEmpty(_settings.MistralKey2))
+                // 1. جيميني + ريتراي
+                if (geminiEnabled)
                 {
-                    strategy.Add(mistralPrimaryRetry);
-                    strategy.Add(mistralSecondaryRetry);
-                }
-                else
-                {
-                    strategy.Add(mistralPrimaryRetry);
+                    strategy.Add(gemini);
+                    strategy.Add(geminiRetry);
                 }
 
+                // 2. ميسترال (بدون ريتراي)
+                if (mistralP1Enabled) strategy.Add(mistralPrimary);
+                if (mistralP2Enabled) strategy.Add(mistralSecondary);
+
+                // 3. أولاما
                 strategy.Add(ollamaCloud);
                 strategy.Add(ollamaLocal);
             }
-            else
+            else // (نص قصير)
             {
-                strategy.Add(ollamaLocal);
-                strategy.Add(mistralPrimary);
-                if (!string.IsNullOrEmpty(_settings.MistralKey2)) strategy.Add(mistralSecondary);
-                strategy.Add(ollamaCloud);
+                strategy.Add(ollamaLocal); // 1. المحلي أولاً
+
+                // 2. جيميني + ريتراي
+                if (geminiEnabled)
+                {
+                    strategy.Add(gemini);
+                    strategy.Add(geminiRetry);
+                }
+
+                // 3. ميسترال (بدون ريتراي)
+                if (mistralP1Enabled) strategy.Add(mistralPrimary);
+                if (mistralP2Enabled) strategy.Add(mistralSecondary);
+
+                strategy.Add(ollamaCloud); // 4. الكلاود الاحتياطي
             }
             return strategy;
         }
-        #endregion
+
 
         // ---------------------------------------------------------------------
         //                                منطق التشغيل
@@ -295,7 +418,7 @@ namespace WinFormsApp1
                         else
                         {
                             textToSendToAPI = string.Join("\n", textSlices);
-                            _logger(logFilePath, $"    -> Sliced text into {textSlices.Count} segments for translation.", false);
+                            _logger(logFilePath, $"    -> Sliced text into {textSlices.Count} segments.", false);
                         }
                     }
 
@@ -339,10 +462,15 @@ namespace WinFormsApp1
                                 string keyLabel = config.KeyLabel;
                                 string apiKey = config.ApiKey ?? string.Empty;
 
-                                (string translationResult, string errorType, string source) = await (
-                                    currentApi == "mistral"
-                                    ? TranslateWithMistral(textToSendToAPI, currentModel, apiKey, mainAttemptNum, keyLabel, logFilePath)
-                                    : TranslateWithOllama(textToSendToAPI, currentModel, mainAttemptNum, logFilePath));
+                                // 🆕 [تعديل] Switch Expression محدث
+                                (string translationResult, string errorType, string source) = config.Api switch
+                                {
+                                    "mistral" => await TranslateWithMistral(textToSendToAPI, currentModel, apiKey, mainAttemptNum, keyLabel, logFilePath),
+                                    "ollama" => await TranslateWithOllama(textToSendToAPI, currentModel, mainAttemptNum, logFilePath),
+                                    // (مبقاش محتاج يبعت المفتاح)
+                                    "gemini" => await TranslateWithGemini(textToSendToAPI, currentModel, mainAttemptNum, logFilePath),
+                                    _ => (string.Empty, "UNKNOWN_API", string.Empty)
+                                };
 
                                 lastErrorType = errorType;
 
@@ -358,7 +486,7 @@ namespace WinFormsApp1
                                         {
                                             validationPassed = false;
                                             lastErrorType = "LINE_COUNT_MISMATCH";
-                                            _logger(logFilePath, $"    -> WARNING: Model {source} failed validation. Expected {textSlices.Count} lines, Got {translatedSlices.Length} (after filtering empty). Retrying...", true);
+                                            _logger(logFilePath, $"    -> WARNING: Model {source} failed SLICE validation. Expected {textSlices.Count} lines, Got {translatedSlices.Length} (after filtering empty). Retrying...", true);
                                         }
                                         else
                                         {
@@ -392,8 +520,6 @@ namespace WinFormsApp1
                                 }
                                 else
                                 {
-                                    // 🆕 --- [التصحيح] ---
-                                    // هنا بنستخدم (logFilePath) بدل (fileLogPath)
                                     _logger(logFilePath, $"    -> INFO: Model {config.KeyLabel} (or {config.Model}) failed API call. Error: {lastErrorType}. Retrying...", true);
                                 }
 
